@@ -1,4 +1,5 @@
 <template>
+  <Loading :active="isLoading"></Loading>
   <div class="container-fluid">
     <div class="text-end">
       <button type="button" class="btn btn-primary" @click.prevent="openModal(true)">
@@ -33,7 +34,7 @@
     <td>
         <div class="btn-group">
         <button class="btn btn-outline-primary btn-sm" @click="openModal(false, item)">編輯</button>
-        <button class="btn btn-outline-danger btn-sm">刪除</button>
+        <button class="btn btn-outline-danger btn-sm" @click="openDelModal(item)">刪除</button>
         </div>
     </td>
     </tr>
@@ -41,10 +42,12 @@
 </table>
   </div>
 <ProductModal ref="productModal" :product="tempProduct" @updated-product="updatedProduct"></ProductModal>
+<DelModal ref="delModal" :item="tempProduct" @del-item="delProduct"></DelModal>
 </template>
 
 <script>
 import ProductModal from '../views/ProductModal.vue'
+import DelModal from '../views/DelModal.vue'
 
 export default {
   data () {
@@ -52,15 +55,18 @@ export default {
       products: [],
       pagination: {},
       tempProduct: {},
-      isNew: false
+      isNew: false,
+      isLoading: false
     }
   },
   components: {
-    ProductModal
+    ProductModal,
+    DelModal
   },
   methods: {
     getProduct () {
       const api = `${process.env.VUE_APP_API}api/${process.env.VUE_APP_PATH}/products`
+      this.isLoading = true
       this.$http.get(api)
         .then((res) => {
           if (res.data.success) {
@@ -68,6 +74,7 @@ export default {
             this.products = res.data.products
             this.pagination = res.data.pagination
           }
+          this.isLoading = false
         }).catch((err) => {
           console.log(err)
         })
@@ -82,8 +89,12 @@ export default {
       const productComponent = this.$refs.productModal
       productComponent.showModal()
     },
+    openDelModal (item) {
+      this.tempProduct = { ...item }
+      const productDelComponent = this.$refs.delModal
+      productDelComponent.showModal()
+    },
     updatedProduct (item) {
-      console.log(process.env.VUE_APP_PATH)
       this.tempProduct = item
       let httpMethod = 'post'
       let api = `${process.env.VUE_APP_API}api/${process.env.VUE_APP_PATH}/admin/product`
@@ -96,6 +107,20 @@ export default {
         .then((res) => {
           console.log(res.data)
           productComponent.hideModal()
+          this.getProduct()
+        }).catch((err) => {
+          console.log(err)
+        })
+    },
+    delProduct (item) {
+      this.tempProduct = item
+      console.log(this.tempProduct)
+      const api = `${process.env.VUE_APP_API}api/${process.env.VUE_APP_PATH}/admin/product/${item.id}`
+      const productDelComponent = this.$refs.delModal
+      this.$http.delete(api, this.tempProduct)
+        .then((res) => {
+          console.log(res.data)
+          productDelComponent.hideModal()
           this.getProduct()
         }).catch((err) => {
           console.log(err)
