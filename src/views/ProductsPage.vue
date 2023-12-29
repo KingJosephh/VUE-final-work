@@ -63,6 +63,7 @@ export default {
     ProductModal,
     DelModal
   },
+  inject: ['emitter'],
   methods: {
     getProduct () {
       const api = `${process.env.VUE_APP_API}api/${process.env.VUE_APP_PATH}/products`
@@ -103,11 +104,23 @@ export default {
         api = `${process.env.VUE_APP_API}api/${process.env.VUE_APP_PATH}/admin/product/${item.id}`
       }
       const productComponent = this.$refs.productModal
-      this.$http[httpMethod](api, this.tempProduct)
+      this.$http[httpMethod](api, { data: this.tempProduct })
         .then((res) => {
           console.log(res.data)
           productComponent.hideModal()
-          this.getProduct()
+          if (res.data.success) {
+            this.getProduct()
+            this.emitter.emit('push-message', {
+              style: 'success',
+              title: '更新成功'
+            })
+          } else {
+            this.emitter.emit('push-message', {
+              style: 'danger',
+              title: '更新失敗',
+              content: res.data.message
+            })
+          }
         }).catch((err) => {
           console.log(err)
         })
